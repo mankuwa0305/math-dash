@@ -1,875 +1,587 @@
-[制限時間付き計算ゲームindex.html](https://github.com/user-attachments/files/32749425/index.html)
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Math & Dash - 中1脳トレ決定版</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Noto+Sans+JP:wght@500;700;900&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Fredoka', 'Noto Sans JP', sans-serif;
-            touch-action: manipulation;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-        
-        .arcade-btn {
-            transition: transform 0.05s ease, box-shadow 0.05s ease;
-            box-shadow: 0 6px 0 rgba(0, 0, 0, 0.25);
-        }
-        .arcade-btn:active {
-            transform: translateY(4px);
-            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
-        }
-
-        .pulse-timer {
-            animation: pulse-red 0.5s infinite alternate;
-        }
-
-        @keyframes pulse-red {
-            from { color: #ef4444; transform: scale(1); }
-            to { color: #dc2626; transform: scale(1.08); }
-        }
-
-        /* Glassmorphism overlays */
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-        }
-
-        /* Custom Scrollbar for Ranking */
-        .custom-scroll::-webkit-scrollbar {
-            width: 6px;
-        }
-        .custom-scroll::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.05);
-            border-radius: 4px;
-        }
-        .custom-scroll::-webkit-scrollbar-thumb {
-            background: rgba(99, 102, 241, 0.5);
-            border-radius: 4px;
-        }
-
-        canvas {
-            touch-action: none;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Math & Dash - 中1速算＆判断力トレーニング</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    /* アニメーション */
+    @keyframes pulse-fast {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .animate-pulse-fast {
+      animation: pulse-fast 0.6s infinite;
+    }
+  </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-center p-2 sm:p-4 overflow-hidden select-none">
+<body class="bg-slate-900 text-white min-h-screen flex flex-col items-center justify-between p-2 overflow-hidden select-none">
 
-    <!-- Main Game Container -->
-    <div class="relative w-full max-w-md bg-slate-800 border-4 border-slate-700 rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[92vh] max-h-[850px]">
+  <!-- ヘッダー（タイトルエリア：ゲーム開始後は非表示にして画面を広く使う） -->
+  <header id="header-area" class="w-full max-w-md text-center py-1 transition-all duration-300">
+    <h1 class="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-yellow-400">
+      ⚡ Math & Dash ⚡
+    </h1>
+    <p class="text-[10px] text-slate-400">計算判断力 ✕ アクション脳トレ</p>
+  </header>
+
+  <!-- メインコンテンツ領域 -->
+  <main class="w-full max-w-md flex-1 flex flex-col justify-between items-center relative">
+
+    <!-- 1. スタート・タイトル画面 -->
+    <div id="start-screen" class="w-full flex-1 flex flex-col justify-center items-center text-center p-4 bg-slate-800/80 rounded-2xl border border-slate-700 my-2">
+      <div class="text-4xl mb-2">🧠⚡</div>
+      <h2 class="text-lg font-bold mb-2 text-cyan-300">中1向け脳トレ・スピード計算</h2>
+      <p class="text-xs text-slate-300 mb-4 leading-relaxed">
+        中央の計算を<span class="text-yellow-300 font-bold">5秒以内</span>に解きつつ、<br>
+        下部で<span class="text-emerald-400 font-bold">時計⏱️</span>を拾って時間延長！<br>
+        <span class="text-rose-400 font-bold">爆弾💣</span>は避けよう！
+      </p>
+      
+      <button id="start-btn" class="w-full max-w-xs py-3 px-6 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-extrabold rounded-xl shadow-lg transform active:scale-95 transition-all text-base tracking-wider border-b-4 border-blue-800">
+        ゲームスタート！
+      </button>
+
+      <!-- TOP10 ランキング表示領域 -->
+      <div class="w-full mt-4 text-left bg-slate-900/80 p-3 rounded-lg border border-slate-700 max-h-48 overflow-y-auto">
+        <h3 class="text-xs font-bold text-yellow-400 mb-2 flex items-center gap-1">
+          <span>🏆</span> ハイスコア ランキング (TOP 10)
+        </h3>
+        <ol id="ranking-list" class="text-xs space-y-1 text-slate-300 divide-y divide-slate-800">
+          <li class="text-center text-slate-500 py-2">記録がまだありません</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- 2. ゲームプレイ画面 -->
+    <div id="game-screen" class="w-full flex-1 flex flex-col justify-between items-center hidden relative">
+      
+      <!-- ステータスバー（スコア・全体タイマー・ポーズボタン） -->
+      <div class="w-full flex justify-between items-center bg-slate-800/90 px-3 py-1.5 rounded-xl border border-slate-700">
+        <div>
+          <span class="text-[10px] text-slate-400">SCORE</span>
+          <div id="score-display" class="text-lg font-black text-yellow-400 leading-none">0</div>
+        </div>
         
-        <!-- Header Bar: Stats -->
-        <div class="bg-slate-900/90 border-b border-slate-700 p-3 flex justify-between items-center z-10">
-            <div>
-                <div class="text-xs text-slate-400 font-bold tracking-wider">SCORE</div>
-                <div id="scoreDisplay" class="text-2xl font-black text-amber-400">0</div>
-            </div>
-            
-            <div class="text-center">
-                <div class="text-xs text-slate-400 font-bold tracking-wider">TIME</div>
-                <div id="timeDisplay" class="text-3xl font-black text-emerald-400 font-mono">30.0</div>
-            </div>
-
-            <div class="text-right">
-                <div class="text-xs text-slate-400 font-bold tracking-wider">TOP SCORE</div>
-                <div id="highScoreDisplay" class="text-xl font-extrabold text-cyan-400">0</div>
-            </div>
+        <div class="text-center">
+          <span class="text-[10px] text-slate-400">残り時間</span>
+          <div id="timer-display" class="text-xl font-black text-cyan-300 leading-none">30.0s</div>
         </div>
 
-        <!-- Middle Section: Math Question Board -->
-        <div class="bg-gradient-to-b from-indigo-950 to-slate-900 p-4 border-b border-slate-700 flex flex-col justify-center items-center shrink-0 min-h-[190px] relative z-10 shadow-lg">
-            
-            <!-- 問題制限時間バー (5秒カウントダウン) -->
-            <div class="w-full bg-slate-800 h-2.5 rounded-full mb-2 overflow-hidden border border-slate-700/80">
-                <div id="questionProgressBar" class="bg-amber-400 h-full w-full transition-all duration-75 ease-linear"></div>
-            </div>
+        <!-- 一時停止ボタン（小さく設置） -->
+        <button id="pause-btn" class="p-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs font-bold border border-slate-600 active:scale-95">
+          ⏸️
+        </button>
+      </div>
 
-            <div class="flex justify-between items-center w-full mb-1">
-                <div class="text-xs font-bold text-indigo-300 uppercase tracking-widest bg-indigo-900/60 px-3 py-0.5 rounded-full border border-indigo-500/30">
-                    脳トレ計算問題
-                </div>
-                <div id="questionTimerText" class="text-xs font-black text-amber-400 font-mono bg-slate-900/80 px-2 py-0.5 rounded-md border border-amber-500/30">
-                    5.0s
-                </div>
-            </div>
-
-            <div id="questionDisplay" class="text-3xl sm:text-4xl font-black text-white my-1 tracking-wide drop-shadow-md">
-                READY?
-            </div>
-            
-            <!-- Answer Buttons -->
-            <div id="answersContainer" class="grid grid-cols-3 gap-2 sm:gap-3 w-full mt-1">
-                <button class="answer-btn arcade-btn bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-black text-xl sm:text-2xl py-2.5 rounded-2xl border-2 border-indigo-400 disabled:opacity-50 touch-none select-none" disabled>-</button>
-                <button class="answer-btn arcade-btn bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-black text-xl sm:text-2xl py-2.5 rounded-2xl border-2 border-indigo-400 disabled:opacity-50 touch-none select-none" disabled>-</button>
-                <button class="answer-btn arcade-btn bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-black text-xl sm:text-2xl py-2.5 rounded-2xl border-2 border-indigo-400 disabled:opacity-50 touch-none select-none" disabled>-</button>
-            </div>
+      <!-- 計算問題エリア -->
+      <div class="w-full bg-slate-800 rounded-xl p-3 border-2 border-cyan-500/50 shadow-lg my-1 flex flex-col items-center">
+        <!-- 5秒問題タイマーバー -->
+        <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden mb-2 border border-slate-700">
+          <div id="q-timer-bar" class="bg-yellow-400 h-full w-full transition-all duration-75"></div>
         </div>
 
-        <!-- Bottom Section: HTML5 Canvas Action Mini-Game -->
-        <div class="relative flex-grow bg-slate-950 overflow-hidden">
-            <canvas id="gameCanvas" class="w-full h-full block"></canvas>
-            
-            <!-- On-Screen Controls Hint -->
-            <div class="absolute bottom-2 left-0 right-0 text-center pointer-events-none opacity-40 text-xs text-slate-300">
-                ← 指スライド または 画面左右タップで移動 →
-            </div>
+        <!-- 式表示 -->
+        <div id="question-text" class="text-2xl font-black text-white tracking-widest my-1 min-h-[36px] flex items-center justify-center">
+          -
         </div>
 
-        <!-- START OVERLAY -->
-        <div id="startOverlay" class="absolute inset-0 z-30 glass-panel flex flex-col items-center justify-center p-6 text-slate-900 text-center">
-            <div class="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-3xl mb-3 shadow-lg transform -rotate-6 text-white">
-                ⚡
-            </div>
-            <h1 class="text-3xl sm:text-4xl font-black text-slate-900 mb-2 tracking-tight">Math & Dash</h1>
-            <p class="text-slate-600 text-sm font-semibold mb-6 max-w-xs leading-relaxed">
-                <span class="text-indigo-600 font-bold">【中1向け判断力トレーニング】</span><br>
-                計算を解きながら、画面下の操作で時計(+3秒)を拾い、爆弾(-5秒)を避けよう！
-            </p>
-            
-            <button id="startBtn" class="arcade-btn bg-emerald-500 hover:bg-emerald-400 text-white font-black text-2xl py-4 px-10 rounded-2xl border-b-4 border-emerald-700 w-full max-w-xs transition-all transform hover:scale-105 cursor-pointer">
-                ゲームスタート！
-            </button>
+        <!-- 選択肢ボタン (4つ) -->
+        <div id="options-container" class="grid grid-cols-2 gap-2 w-full mt-1">
+          <!-- JSで動的生成 -->
         </div>
+      </div>
 
-        <!-- GAME OVER OVERLAY WITH RANKING -->
-        <div id="gameOverOverlay" class="absolute inset-0 z-30 glass-panel flex flex-col items-center justify-between p-4 sm:p-6 text-slate-900 text-center hidden overflow-y-auto">
-            <div class="w-full flex flex-col items-center my-auto">
-                
-                <div id="newRecordBadge" class="hidden bg-amber-400 text-amber-950 font-black text-xs px-4 py-1 rounded-full mb-1 animate-bounce uppercase tracking-wider shadow-md">
-                    🎉 TOP 10 ランクイン！ 🎉
-                </div>
-                
-                <h2 class="text-2xl font-black text-slate-900">タイムアップ！</h2>
-                
-                <!-- Main Stats summary -->
-                <div class="bg-white border border-slate-200 rounded-2xl p-3 w-full max-w-xs my-2 shadow-sm flex justify-around items-center">
-                    <div>
-                        <div class="text-[10px] text-slate-400 font-bold">SCORE</div>
-                        <div id="finalScore" class="text-2xl font-black text-indigo-600">0</div>
-                    </div>
-                    <div class="h-8 w-px bg-slate-200"></div>
-                    <div>
-                        <div class="text-[10px] text-slate-400 font-bold">正解数</div>
-                        <div id="accuracyDisplay" class="text-base font-bold text-slate-800">0/0</div>
-                    </div>
-                    <div class="h-8 w-px bg-slate-200"></div>
-                    <div>
-                        <div class="text-[10px] text-slate-400 font-bold">時計</div>
-                        <div id="clockCountDisplay" class="text-base font-bold text-emerald-600">0個</div>
-                    </div>
-                </div>
-
-                <!-- TOP 10 RANKING LIST CONTAINER -->
-                <div class="w-full max-w-xs bg-white/80 border border-slate-200 rounded-2xl p-3 my-1 shadow-inner">
-                    <div class="flex justify-between items-center mb-2 px-1 border-b pb-1">
-                        <span class="text-xs font-extrabold text-slate-700 flex items-center gap-1">
-                            🏆 TOP 10 ランキング
-                        </span>
-                        <span class="text-[10px] font-bold text-slate-400">過去のベスト記録</span>
-                    </div>
-
-                    <!-- Ranking List Scrollable -->
-                    <div id="rankingList" class="max-h-40 overflow-y-auto custom-scroll space-y-1.5 pr-1">
-                        <!-- Populated by JS -->
-                    </div>
-                </div>
-
-                <button id="restartBtn" class="arcade-btn bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xl py-3 px-8 rounded-2xl border-b-4 border-indigo-800 w-full max-w-xs cursor-pointer mt-3">
-                    もう一度挑戦！
-                </button>
-            </div>
-        </div>
+      <!-- アクションキャンバスエリア（下部） -->
+      <div class="w-full flex-1 relative bg-slate-950 rounded-xl overflow-hidden border border-slate-800 min-h-[160px] max-h-[220px]">
+        <canvas id="action-canvas" class="w-full h-full block touch-none"></canvas>
+      </div>
 
     </div>
 
-    <script>
-        class SoundFX {
-            constructor() {
-                this.ctx = null;
-            }
+    <!-- 3. 一時停止（ポーズ）オーバーレイ -->
+    <div id="pause-modal" class="fixed inset-0 bg-black/80 flex flex-col justify-center items-center z-50 hidden">
+      <div class="bg-slate-800 p-6 rounded-2xl border border-slate-600 text-center max-w-xs w-full">
+        <h2 class="text-xl font-bold mb-4 text-cyan-300">PAUSE (一時停止中)</h2>
+        <div class="space-y-3">
+          <button id="resume-btn" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg active:scale-95">
+            ゲームを再開
+          </button>
+          <button id="quit-btn" class="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg active:scale-95">
+            タイトルへ戻る
+          </button>
+        </div>
+      </div>
+    </div>
 
-            init() {
-                if (!this.ctx) {
-                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                }
-                if (this.ctx.state === 'suspended') {
-                    this.ctx.resume();
-                }
-            }
+    <!-- 4. リザルト（結果）画面 -->
+    <div id="result-screen" class="w-full flex-1 flex flex-col justify-center items-center text-center p-4 bg-slate-800/95 rounded-2xl border border-slate-700 hidden">
+      <h2 class="text-2xl font-black text-rose-400 mb-1">GAME OVER</h2>
+      <p id="new-record-badge" class="hidden text-xs bg-yellow-400 text-slate-900 font-extrabold px-3 py-1 rounded-full mb-2 animate-bounce">
+        🎉 自己ベスト更新！
+      </p>
 
-            playCorrect() {
-                if (!this.ctx) return;
-                try {
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(523.25, this.ctx.currentTime); // C5
-                    osc.frequency.exponentialRampToValueAtTime(1046.50, this.ctx.currentTime + 0.15); // C6
-                    gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
-                    osc.start();
-                    osc.stop(this.ctx.currentTime + 0.15);
-                } catch(e){}
-            }
+      <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-700 w-full mb-4 space-y-2">
+        <div>
+          <span class="text-xs text-slate-400">最終スコア</span>
+          <div id="final-score" class="text-3xl font-black text-yellow-300">0</div>
+        </div>
+        <div class="flex justify-around text-xs border-t border-slate-800 pt-2 text-slate-300">
+          <div>正解数: <span id="stat-correct" class="font-bold text-emerald-400">0</span></div>
+          <div>誤答数: <span id="stat-wrong" class="font-bold text-rose-400">0</span></div>
+        </div>
+      </div>
 
-            playWrong() {
-                if (!this.ctx) return;
-                try {
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(180, this.ctx.currentTime);
-                    osc.frequency.linearRampToValueAtTime(110, this.ctx.currentTime + 0.2);
-                    gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
-                    osc.start();
-                    osc.stop(this.ctx.currentTime + 0.2);
-                } catch(e){}
-            }
+      <button id="restart-btn" class="w-full max-w-xs py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-extrabold rounded-xl shadow-lg active:scale-95 transition-all text-base mb-2">
+        もう一度挑戦！
+      </button>
+    </div>
 
-            playClock() {
-                if (!this.ctx) return;
-                try {
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(880, this.ctx.currentTime); // A5
-                    osc.frequency.setValueAtTime(1318.51, this.ctx.currentTime + 0.08); // E6
-                    gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
-                    osc.start();
-                    osc.stop(this.ctx.currentTime + 0.25);
-                } catch(e){}
-            }
+  </main>
 
-            playBomb() {
-                if (!this.ctx) return;
-                try {
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
-                    osc.type = 'square';
-                    osc.frequency.setValueAtTime(100, this.ctx.currentTime);
-                    osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.3);
-                    gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
-                    osc.start();
-                    osc.stop(this.ctx.currentTime + 0.3);
-                } catch(e){}
-            }
+  <script>
+    // --- Web Audio API (効果音生成) ---
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
 
-            playFanfare() {
-                if (!this.ctx) return;
-                try {
-                    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
-                    notes.forEach((freq, idx) => {
-                        const osc = this.ctx.createOscillator();
-                        const gain = this.ctx.createGain();
-                        osc.type = 'triangle';
-                        osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.1);
-                        gain.gain.setValueAtTime(0.25, this.ctx.currentTime + idx * 0.1);
-                        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + idx * 0.1 + 0.25);
-                        osc.connect(gain);
-                        gain.connect(this.ctx.destination);
-                        osc.start(this.ctx.currentTime + idx * 0.1);
-                        osc.stop(this.ctx.currentTime + idx * 0.1 + 0.25);
-                    });
-                } catch(e){}
-            }
-        }
+    function initAudio() {
+      if (!audioCtx) audioCtx = new AudioCtx();
+    }
 
-        const sound = new SoundFX();
+    function playSound(type) {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      const now = audioCtx.currentTime;
 
-        let score = 0;
-        let timeLeft = 30.0;
-        let isPlaying = false;
-        let lastTime = 0;
+      if (type === 'correct') {
+        osc.frequency.setValueAtTime(523.25, now); // C5
+        osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      } else if (type === 'wrong') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.setValueAtTime(130, now + 0.1);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        osc.start(now);
+        osc.stop(now + 0.3);
+      } else if (type === 'item') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.setValueAtTime(1760, now + 0.08);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        osc.start(now);
+        osc.stop(now + 0.2);
+      } else if (type === 'bomb') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(120, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.3);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        osc.start(now);
+        osc.stop(now + 0.3);
+      }
+    }
 
-        // 問題タイマー用の変数
-        const QUESTION_TIME_LIMIT = 5.0;
-        let questionTimer = QUESTION_TIME_LIMIT;
+    // --- ゲーム状態管理 ---
+    let gameState = 'START'; // START, PLAYING, PAUSED, GAMEOVER
+    let score = 0;
+    let mainTimer = 30.0;
+    let correctCount = 0;
+    let wrongCount = 0;
+    let currentAnswer = 0;
+    let qTimer = 5.0; // 問題ごとの5秒タイマー
+    const Q_TIME_LIMIT = 5.0;
 
-        let totalQuestions = 0;
-        let correctQuestions = 0;
-        let clocksCollected = 0;
+    let lastTime = 0;
+    let isProcessingAnswer = false;
 
-        let currentProblem = { question: '', answer: 0, options: [] };
+    // DOM要素
+    const headerArea = document.getElementById('header-area');
+    const startScreen = document.getElementById('start-screen');
+    const gameScreen = document.getElementById('game-screen');
+    const resultScreen = document.getElementById('result-screen');
+    const pauseModal = document.getElementById('pause-modal');
 
-        // Ranking System Storage Key
-        const RANKING_STORAGE_KEY = 'math_dash_ranking_v1';
+    const scoreDisplay = document.getElementById('score-display');
+    const timerDisplay = document.getElementById('timer-display');
+    const questionText = document.getElementById('question-text');
+    const optionsContainer = document.getElementById('options-container');
+    const qTimerBar = document.getElementById('q-timer-bar');
 
-        // DOM Elements
-        const scoreDisplay = document.getElementById('scoreDisplay');
-        const timeDisplay = document.getElementById('timeDisplay');
-        const highScoreDisplay = document.getElementById('highScoreDisplay');
-        const questionDisplay = document.getElementById('questionDisplay');
-        const answerBtns = document.querySelectorAll('.answer-btn');
-        const startOverlay = document.getElementById('startOverlay');
-        const gameOverOverlay = document.getElementById('gameOverOverlay');
-        const startBtn = document.getElementById('startBtn');
-        const restartBtn = document.getElementById('restartBtn');
-        const finalScore = document.getElementById('finalScore');
-        const accuracyDisplay = document.getElementById('accuracyDisplay');
-        const clockCountDisplay = document.getElementById('clockCountDisplay');
-        const rankingList = document.getElementById('rankingList');
-        const questionProgressBar = document.getElementById('questionProgressBar');
-        const questionTimerText = document.getElementById('questionTimerText');
+    // --- 中1向け計算問題生成 ---
+    function generateQuestion() {
+      isProcessingAnswer = false;
+      qTimer = Q_TIME_LIMIT;
 
-        // Canvas Setup
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+      const types = ['add_neg', 'sub_neg', 'mul_neg', 'div_neg'];
+      const type = types[Math.floor(Math.random() * types.length)];
+      
+      let a, b, qStr, ans;
 
-        function resizeCanvas() {
-            const rect = canvas.parentElement.getBoundingClientRect();
-            canvas.width = rect.width;
-            canvas.height = rect.height;
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+      if (type === 'add_neg') {
+        a = Math.floor(Math.random() * 20) - 10;
+        b = Math.floor(Math.random() * 20) - 10;
+        qStr = `${a < 0 ? `(${a})` : a} + ${b < 0 ? `(${b})` : b}`;
+        ans = a + b;
+      } else if (type === 'sub_neg') {
+        a = Math.floor(Math.random() * 20) - 10;
+        b = Math.floor(Math.random() * 20) - 10;
+        qStr = `${a < 0 ? `(${a})` : a} - ${b < 0 ? `(${b})` : b}`;
+        ans = a - b;
+      } else if (type === 'mul_neg') {
+        a = Math.floor(Math.random() * 14) - 7;
+        b = Math.floor(Math.random() * 14) - 7;
+        if (a === 0) a = 2;
+        if (b === 0) b = -3;
+        qStr = `${a < 0 ? `(${a})` : a} × ${b < 0 ? `(${b})` : b}`;
+        ans = a * b;
+      } else {
+        ans = Math.floor(Math.random() * 12) - 6;
+        if (ans === 0) ans = 3;
+        b = Math.floor(Math.random() * 8) + 1;
+        if (Math.random() < 0.5) b = -b;
+        a = ans * b;
+        qStr = `${a < 0 ? `(${a})` : a} ÷ ${b < 0 ? `(${b})` : b}`;
+      }
 
-        // Load Top Score for Header
-        function getRankings() {
-            try {
-                return JSON.parse(localStorage.getItem(RANKING_STORAGE_KEY)) || [];
-            } catch (e) {
-                return [];
-            }
-        }
+      currentAnswer = ans;
+      questionText.textContent = `${qStr} = ?`;
 
-        function updateTopScoreHeader() {
-            const rankings = getRankings();
-            const topScore = rankings.length > 0 ? rankings[0].score : 0;
-            highScoreDisplay.textContent = topScore;
-        }
-        updateTopScoreHeader();
+      // 選択肢作成
+      const options = new Set([ans]);
+      while (options.size < 4) {
+        const dummy = ans + (Math.floor(Math.random() * 7) - 3) * (Math.random() < 0.5 ? 1 : -1);
+        if (dummy !== ans) options.add(dummy);
+      }
 
-        function generateMathQuestion() {
-            // 問題生成時にタイマーを5秒にリセット
-            questionTimer = QUESTION_TIME_LIMIT;
+      const shuffled = Array.from(options).sort(() => Math.random() - 0.5);
+      optionsContainer.innerHTML = '';
+      
+      shuffled.forEach(val => {
+        const btn = document.createElement('button');
+        btn.className = "py-2.5 bg-slate-700 hover:bg-slate-600 active:bg-cyan-600 text-white font-bold text-lg rounded-xl border border-slate-600 shadow transition-all active:scale-95";
+        btn.textContent = val;
+        
+        // 高速タップ対応（pointerdown）
+        btn.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
+          checkAnswer(val, btn);
+        });
+        optionsContainer.appendChild(btn);
+      });
+    }
 
-            let availableTypes = ['add_neg', 'sub_neg'];
-            if (score >= 100) availableTypes.push('mul_neg');
-            if (score >= 200) availableTypes.push('div_neg');
-            if (score >= 350) availableTypes.push('linear_comb');
+    function checkAnswer(selected, btnEl) {
+      if (isProcessingAnswer || gameState !== 'PLAYING') return;
+      isProcessingAnswer = true;
 
-            const type = availableTypes[Math.floor(Math.random() * availableTypes.length)];
-            let qText = '';
-            let ans = 0;
+      if (selected === currentAnswer) {
+        playSound('correct');
+        score += 100;
+        mainTimer += 1.5;
+        correctCount++;
+        btnEl.classList.add('bg-emerald-500');
+      } else {
+        playSound('wrong');
+        mainTimer = Math.max(0, mainTimer - 2.5);
+        wrongCount++;
+        btnEl.classList.add('bg-rose-600');
+      }
 
-            const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-            const randNonZero = (min, max) => {
-                let v = 0;
-                while (v === 0) v = randInt(min, max);
-                return v;
-            };
+      scoreDisplay.textContent = score;
+      setTimeout(generateQuestion, 150);
+    }
 
-            switch (type) {
-                case 'add_neg': {
-                    const a = randInt(-12, 12);
-                    const b = randInt(-12, 12);
-                    qText = `${a >= 0 ? a : `(${a})`} + ${b >= 0 ? b : `(${b})`}`;
-                    ans = a + b;
-                    break;
-                }
-                case 'sub_neg': {
-                    const a = randInt(-10, 15);
-                    const b = randInt(-12, 12);
-                    qText = `${a >= 0 ? a : `(${a})`} - ${b >= 0 ? b : `(${b})`}`;
-                    ans = a - b;
-                    break;
-                }
-                case 'mul_neg': {
-                    const a = randNonZero(-8, 9);
-                    const b = randNonZero(-8, 9);
-                    qText = `${a >= 0 ? a : `(${a})`} × ${b >= 0 ? b : `(${b})`}`;
-                    ans = a * b;
-                    break;
-                }
-                case 'div_neg': {
-                    const ansVal = randNonZero(-9, 9);
-                    const b = randNonZero(-6, 6);
-                    const a = ansVal * b;
-                    qText = `${a >= 0 ? a : `(${a})`} ÷ ${b >= 0 ? b : `(${b})`}`;
-                    ans = ansVal;
-                    break;
-                }
-                case 'linear_comb': {
-                    const x = randInt(-5, 8);
-                    const k = randNonZero(-4, 5);
-                    const c = randInt(-10, 10);
-                    qText = `${k}x ${c >= 0 ? '+ ' + c : '- ' + Math.abs(c)} (x = ${x})`;
-                    ans = k * x + c;
-                    break;
-                }
-            }
+    function handleQuestionTimeout() {
+      if (isProcessingAnswer || gameState !== 'PLAYING') return;
+      isProcessingAnswer = true;
+      playSound('wrong');
+      mainTimer = Math.max(0, mainTimer - 2.5);
+      wrongCount++;
+      generateQuestion();
+    }
 
-            const options = [ans];
-            while (options.length < 3) {
-                let offset = randInt(-5, 5);
-                if (offset === 0) offset = 2;
-                let wrong = ans + offset;
-                if (Math.random() < 0.3) wrong = -ans;
-                if (!options.includes(wrong)) {
-                    options.push(wrong);
-                }
-            }
+    // --- キャッチアクション（Canvas制御） ---
+    const canvas = document.getElementById('action-canvas');
+    const ctx = canvas.getContext('2d');
 
-            options.sort(() => Math.random() - 0.5);
+    let player = { x: 0, y: 0, width: 40, height: 12, speed: 0 };
+    let items = [];
+    let itemSpawnTimer = 0;
 
-            currentProblem = { question: qText, answer: ans, options: options };
+    function resizeCanvas() {
+      canvas.width = canvas.clientWidth;
+      canvas.height = canvas.clientHeight;
+      player.y = canvas.height - 20;
+      if (player.x === 0) player.x = canvas.width / 2 - player.width / 2;
+    }
+    window.addEventListener('resize', resizeCanvas);
 
-            questionDisplay.textContent = currentProblem.question + ' = ?';
-            answerBtns.forEach((btn, idx) => {
-                btn.textContent = currentProblem.options[idx];
-                btn.disabled = false;
-                btn.className = "answer-btn arcade-btn bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-black text-xl sm:text-2xl py-2.5 rounded-2xl border-2 border-indigo-400 cursor-pointer touch-none select-none";
-            });
-        }
+    // タッチ・マウス操作対応
+    function handleMove(clientX) {
+      const rect = canvas.getBoundingClientRect();
+      const touchX = clientX - rect.left;
+      player.x = Math.max(0, Math.min(canvas.width - player.width, touchX - player.width / 2));
+    }
 
-        let lastAnswerTime = 0;
+    canvas.addEventListener('touchmove', (e) => {
+      if (e.touches.length > 0) handleMove(e.touches[0].clientX);
+    });
+    canvas.addEventListener('mousemove', (e) => {
+      if (e.buttons === 1) handleMove(e.clientX);
+    });
 
-        function handleAnswer(selectedIndex) {
-            // 重複判定・高速連打防止デバウンス（100ms以内は1回のみ処理）
-            const now = Date.now();
-            if (now - lastAnswerTime < 100) return;
-            lastAnswerTime = now;
+    function updateAction(dt) {
+      // アイテム生成 (爆弾70% / 時計22.5% / スター7.5%)
+      itemSpawnTimer += dt;
+      if (itemSpawnTimer > 0.8) {
+        itemSpawnTimer = 0;
+        const rand = Math.random();
+        let type = 'bomb'; // 爆弾 70%
+        if (rand < 0.225) type = 'clock'; // 時計 22.5%
+        else if (rand < 0.30) type = 'star'; // スター 7.5%
 
-            if (!isPlaying) return;
+        items.push({
+          x: Math.random() * (canvas.width - 20),
+          y: -20,
+          type: type,
+          speed: 90 + Math.random() * 50
+        });
+      }
 
-            totalQuestions++;
-            const selectedVal = currentProblem.options[selectedIndex];
+      // アイテム移動＆判定
+      for (let i = items.length - 1; i >= 0; i--) {
+        const it = items[i];
+        it.y += it.speed * dt;
 
-            if (selectedVal === currentProblem.answer) {
-                sound.playCorrect();
-                score += 50;
-                timeLeft += 1.5;
-                correctQuestions++;
-                showFloatingText(canvas.width / 2, 40, "+50pt / +1.5s!", "#34d399");
-            } else {
-                sound.playWrong();
-                timeLeft = Math.max(0, timeLeft - 2.5);
-                showFloatingText(canvas.width / 2, 40, "-2.5s!", "#f87171");
-            }
-
+        // キャッチ判定
+        if (
+          it.y + 16 >= player.y &&
+          it.y <= player.y + player.height &&
+          it.x + 16 >= player.x &&
+          it.x <= player.x + player.width
+        ) {
+          if (it.type === 'clock') {
+            playSound('item');
+            mainTimer += 3.0;
+          } else if (it.type === 'star') {
+            playSound('item');
+            score += 300;
             scoreDisplay.textContent = score;
-            generateMathQuestion();
+          } else if (it.type === 'bomb') {
+            playSound('bomb');
+            mainTimer = Math.max(0, mainTimer - 5.0);
+          }
+          items.splice(i, 1);
+          continue;
         }
 
-        answerBtns.forEach((btn, idx) => {
-            // pointerdownで指が触れた瞬間に即時発火（遅延・無効化を防止）
-            btn.addEventListener('pointerdown', (e) => {
-                if (!isPlaying || btn.disabled) return;
-                e.preventDefault();
-                handleAnswer(idx);
-            });
+        // 画面外削除
+        if (it.y > canvas.height) {
+          items.splice(i, 1);
+        }
+      }
+    }
 
-            // クリックのフォールバック
-            btn.addEventListener('click', (e) => {
-                if (!isPlaying || btn.disabled) return;
-                e.preventDefault();
-                handleAnswer(idx);
-            });
-        });
+    function drawAction() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        const player = {
-            x: 150,
-            y: 0,
-            width: 70,
-            height: 18,
-            speed: 8
-        };
+      // プレイヤー描画
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.roundRect(player.x, player.y, player.width, player.height, 6);
+      ctx.fill();
 
-        let items = [];
+      // アイテム描画
+      ctx.font = '16px sans-serif';
+      items.forEach(it => {
+        let icon = '💣';
+        if (it.type === 'clock') icon = '⏱️';
+        if (it.type === 'star') icon = '⭐';
+        ctx.fillText(icon, it.x, it.y + 14);
+      });
+    }
 
-        class FallingItem {
-            constructor() {
-                this.radius = 16;
-                this.x = Math.random() * (canvas.width - this.radius * 2) + this.radius;
-                this.y = -this.radius;
-                
-                const baseSpeed = 2.2 + Math.min(score / 150, 2.5);
-                this.speedY = baseSpeed + Math.random() * 0.8;
+    // --- ゲームメインループ ---
+    function gameLoop(timestamp) {
+      if (!lastTime) lastTime = timestamp;
+      const dt = (timestamp - lastTime) / 1000;
+      lastTime = timestamp;
 
-                const rand = Math.random();
-                if (rand < 0.225) { // 22.5% Clock (+3s)
-                    this.type = 'clock';
-                    this.color = '#10b981';
-                    this.icon = '⏱️';
-                } else if (rand < 0.925) { // 70% Bomb (-5s)
-                    this.type = 'bomb';
-                    this.color = '#ef4444';
-                    this.icon = '💣';
-                } else { // 7.5% Star (+100pt)
-                    this.type = 'star';
-                    this.color = '#f59e0b';
-                    this.icon = '⭐';
-                }
-            }
+      if (gameState === 'PLAYING') {
+        // 全体タイマー更新
+        mainTimer -= dt;
+        timerDisplay.textContent = `${Math.max(0, mainTimer).toFixed(1)}s`;
 
-            update() {
-                this.y += this.speedY;
-            }
-
-            draw() {
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fillStyle = this.color;
-                ctx.shadowColor = this.color;
-                ctx.shadowBlur = 8;
-                ctx.fill();
-
-                ctx.font = '14px serif';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(this.icon, this.x, this.y + 1);
-                ctx.restore();
-            }
+        // 問題個別5秒タイマー
+        qTimer -= dt;
+        const barPercent = Math.max(0, (qTimer / Q_TIME_LIMIT) * 100);
+        qTimerBar.style.width = `${barPercent}%`;
+        if (qTimer <= 0) {
+          handleQuestionTimeout();
         }
 
-        let floatingTexts = [];
-        function showFloatingText(x, y, text, color) {
-            floatingTexts.push({
-                x: x,
-                y: y,
-                text: text,
-                color: color,
-                alpha: 1.0,
-                life: 0.8
-            });
+        // アクション更新
+        updateAction(dt);
+        drawAction();
+
+        // 終了判定
+        if (mainTimer <= 0) {
+          endGame();
+          return;
         }
+      }
 
-        let keys = { left: false, right: false };
+      if (gameState === 'PLAYING' || gameState === 'PAUSED') {
+        requestAnimationFrame(gameLoop);
+      }
+    }
 
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
-            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
-        });
+    // --- ゲーム開始 / 終了制御 ---
+    function startGame() {
+      initAudio();
+      gameState = 'PLAYING';
+      score = 0;
+      mainTimer = 30.0;
+      correctCount = 0;
+      wrongCount = 0;
+      items = [];
 
-        window.addEventListener('keyup', (e) => {
-            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
-            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
-        });
+      // UI切り替え（タイトルのヘッダーを非表示にして画面を広く確保）
+      headerArea.classList.add('hidden');
+      startScreen.classList.add('hidden');
+      resultScreen.classList.add('hidden');
+      gameScreen.classList.remove('hidden');
 
-        let isTouching = false;
-        canvas.addEventListener('touchstart', (e) => {
-            isTouching = true;
-            const rect = canvas.getBoundingClientRect();
-            const touchX = e.touches[0].clientX - rect.left;
-            player.x = touchX;
-        }, { passive: true });
+      scoreDisplay.textContent = '0';
+      resizeCanvas();
+      generateQuestion();
 
-        canvas.addEventListener('touchmove', (e) => {
-            if (isTouching) {
-                const rect = canvas.getBoundingClientRect();
-                const touchX = e.touches[0].clientX - rect.left;
-                player.x = touchX;
-            }
-        }, { passive: true });
+      lastTime = performance.now();
+      requestAnimationFrame(gameLoop);
+    }
 
-        canvas.addEventListener('touchend', () => { isTouching = false; });
+    function endGame() {
+      gameState = 'GAMEOVER';
+      playSound('wrong');
 
-        let spawnTimer = 0;
+      // ランキング保存
+      const isNewRank = saveScoreToRanking(score);
 
-        function updateGame(dt) {
-            timeLeft -= dt;
-            if (timeLeft <= 0) {
-                timeLeft = 0;
-                endGame();
-                return;
-            }
+      // UI表示
+      gameScreen.classList.add('hidden');
+      headerArea.classList.remove('hidden');
+      resultScreen.classList.remove('hidden');
 
-            // 問題タイマーの減算・時間切れ処理
-            questionTimer -= dt;
-            if (questionTimer <= 0) {
-                sound.playWrong();
-                totalQuestions++;
-                timeLeft = Math.max(0, timeLeft - 2.5);
-                showFloatingText(canvas.width / 2, 40, "-2.5s 時間切れ!", "#f87171");
-                generateMathQuestion();
-            }
+      document.getElementById('final-score').textContent = score;
+      document.getElementById('stat-correct').textContent = correctCount;
+      document.getElementById('stat-wrong').textContent = wrongCount;
 
-            // 問題タイマーUI（バー＆数値）のリアルタイム更新
-            if (questionProgressBar && questionTimerText) {
-                const pct = Math.max(0, (questionTimer / QUESTION_TIME_LIMIT) * 100);
-                questionProgressBar.style.width = pct + '%';
-                questionTimerText.textContent = Math.max(0, questionTimer).toFixed(1) + 's';
-                
-                if (questionTimer <= 1.5) {
-                    questionProgressBar.className = "bg-red-500 h-full w-full transition-all duration-75 ease-linear";
-                    questionTimerText.className = "text-xs font-black text-red-400 font-mono bg-slate-900/80 px-2 py-0.5 rounded-md border border-red-500/50 animate-pulse";
-                } else {
-                    questionProgressBar.className = "bg-amber-400 h-full w-full transition-all duration-75 ease-linear";
-                    questionTimerText.className = "text-xs font-black text-amber-400 font-mono bg-slate-900/80 px-2 py-0.5 rounded-md border border-amber-500/30";
-                }
-            }
+      const badge = document.getElementById('new-record-badge');
+      if (isNewRank) badge.classList.remove('hidden');
+      else badge.classList.add('hidden');
 
-            timeDisplay.textContent = timeLeft.toFixed(1);
-            if (timeLeft <= 5.0) {
-                timeDisplay.classList.add('pulse-timer');
-            } else {
-                timeDisplay.classList.remove('pulse-timer');
-            }
+      loadRankingList();
+    }
 
-            if (keys.left) player.x -= player.speed;
-            if (keys.right) player.x += player.speed;
+    // --- ランキング (localStorage) ---
+    function getRanking() {
+      try {
+        return JSON.parse(localStorage.getItem('math_dash_ranking')) || [];
+      } catch (e) {
+        return [];
+      }
+    }
 
-            const halfW = player.width / 2;
-            if (player.x - halfW < 0) player.x = halfW;
-            if (player.x + halfW > canvas.width) player.x = canvas.width - halfW;
+    function saveScoreToRanking(newScore) {
+      if (newScore <= 0) return false;
+      let ranking = getRanking();
+      const dateStr = new Date().toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      
+      ranking.push({ score: newScore, date: dateStr });
+      ranking.sort((a, b) => b.score - a.score);
+      ranking = ranking.slice(0, 10); // TOP10
 
-            player.y = canvas.height - 25;
+      localStorage.setItem('math_dash_ranking', JSON.stringify(ranking));
+      return ranking.some(item => item.score === newScore && item.date === dateStr);
+    }
 
-            spawnTimer += dt;
-            const spawnInterval = Math.max(0.6, 1.4 - (score / 400));
-            if (spawnTimer >= spawnInterval) {
-                spawnTimer = 0;
-                items.push(new FallingItem());
-            }
+    function loadRankingList() {
+      const ranking = getRanking();
+      const listEl = document.getElementById('ranking-list');
+      listEl.innerHTML = '';
 
-            for (let i = items.length - 1; i >= 0; i--) {
-                const item = items[i];
-                item.update();
+      if (ranking.length === 0) {
+        listEl.innerHTML = '<li class="text-center text-slate-500 py-2">記録がまだありません</li>';
+        return;
+      }
 
-                const closestX = Math.max(player.x - halfW, Math.min(item.x, player.x + halfW));
-                const closestY = Math.max(player.y - player.height / 2, Math.min(item.y, player.y + player.height / 2));
-                const distX = item.x - closestX;
-                const distY = item.y - closestY;
-                const distanceSq = (distX * distX) + (distY * distY);
+      ranking.forEach((item, index) => {
+        const li = document.createElement('li');
+        li.className = "flex justify-between items-center py-1 px-1";
+        
+        let medal = `<span class="w-5 text-slate-400 font-bold">${index + 1}.</span>`;
+        if (index === 0) medal = `<span class="w-5">🥇</span>`;
+        if (index === 1) medal = `<span class="w-5">🥈</span>`;
+        if (index === 2) medal = `<span class="w-5">🥉</span>`;
 
-                if (distanceSq < (item.radius * item.radius)) {
-                    if (item.type === 'clock') {
-                        sound.playClock();
-                        timeLeft += 3.0;
-                        clocksCollected++;
-                        showFloatingText(item.x, item.y, "+3s 秒延長!", "#34d399");
-                    } else if (item.type === 'bomb') {
-                        sound.playBomb();
-                        timeLeft = Math.max(0, timeLeft - 5.0);
-                        showFloatingText(item.x, item.y, "-5s 爆発!", "#f87171");
-                    } else if (item.type === 'star') {
-                        sound.playCorrect();
-                        score += 100;
-                        scoreDisplay.textContent = score;
-                        showFloatingText(item.x, item.y, "+100pt", "#fbbf24");
-                    }
+        li.innerHTML = `
+          <div class="flex items-center gap-1">
+            ${medal}
+            <span class="font-bold text-yellow-300">${item.score} pt</span>
+          </div>
+          <span class="text-[10px] text-slate-500">${item.date}</span>
+        `;
+        listEl.appendChild(li);
+      });
+    }
 
-                    items.splice(i, 1);
-                    continue;
-                }
+    // --- イベントリスナー設定 ---
+    document.getElementById('start-btn').addEventListener('click', startGame);
+    document.getElementById('restart-btn').addEventListener('click', startGame);
 
-                if (item.y - item.radius > canvas.height) {
-                    items.splice(i, 1);
-                }
-            }
+    // ポーズ関連
+    document.getElementById('pause-btn').addEventListener('click', () => {
+      if (gameState === 'PLAYING') {
+        gameState = 'PAUSED';
+        pauseModal.classList.remove('hidden');
+      }
+    });
 
-            for (let i = floatingTexts.length - 1; i >= 0; i--) {
-                const ft = floatingTexts[i];
-                ft.y -= 1.2;
-                ft.life -= dt;
-                ft.alpha = Math.max(0, ft.life / 0.8);
-                if (ft.life <= 0) floatingTexts.splice(i, 1);
-            }
-        }
+    document.getElementById('resume-btn').addEventListener('click', () => {
+      if (gameState === 'PAUSED') {
+        gameState = 'PLAYING';
+        pauseModal.classList.add('hidden');
+        lastTime = performance.now();
+        requestAnimationFrame(gameLoop);
+      }
+    });
 
-        function renderGame() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+    document.getElementById('quit-btn').addEventListener('click', () => {
+      gameState = 'START';
+      pauseModal.classList.add('hidden');
+      gameScreen.classList.add('hidden');
+      headerArea.classList.remove('hidden');
+      startScreen.classList.remove('hidden');
+      loadRankingList();
+    });
 
-            // Subtle Grid
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
-            ctx.lineWidth = 1;
-            const gridSize = 30;
-            for (let x = 0; x < canvas.width; x += gridSize) {
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, canvas.height);
-                ctx.stroke();
-            }
-
-            items.forEach(item => item.draw());
-
-            // Player Basket
-            const halfW = player.width / 2;
-            const halfH = player.height / 2;
-
-            ctx.save();
-            ctx.shadowColor = '#6366f1';
-            ctx.shadowBlur = 12;
-
-            const grad = ctx.createLinearGradient(player.x - halfW, player.y, player.x + halfW, player.y);
-            grad.addColorStop(0, '#818cf8');
-            grad.addColorStop(1, '#4f46e5');
-
-            ctx.fillStyle = grad;
-            ctx.beginPath();
-            ctx.roundRect(player.x - halfW, player.y - halfH, player.width, player.height, 8);
-            ctx.fill();
-
-            ctx.fillStyle = '#c7d2fe';
-            ctx.fillRect(player.x - halfW + 4, player.y - halfH + 3, player.width - 8, 3);
-            ctx.restore();
-
-            floatingTexts.forEach(ft => {
-                ctx.save();
-                ctx.font = 'bold 16px Noto Sans JP';
-                ctx.fillStyle = ft.color;
-                ctx.globalAlpha = ft.alpha;
-                ctx.textAlign = 'center';
-                ctx.fillText(ft.text, ft.x, ft.y);
-                ctx.restore();
-            });
-        }
-
-        function gameLoop(timestamp) {
-            if (!isPlaying) return;
-
-            if (!lastTime) lastTime = timestamp;
-            const dt = (timestamp - lastTime) / 1000;
-            lastTime = timestamp;
-
-            updateGame(dt);
-            renderGame();
-
-            if (isPlaying) {
-                requestAnimationFrame(gameLoop);
-            }
-        }
-
-        function startGame() {
-            resizeCanvas();
-            sound.init();
-            
-            score = 0;
-            timeLeft = 30.0;
-            totalQuestions = 0;
-            correctQuestions = 0;
-            clocksCollected = 0;
-            items = [];
-            floatingTexts = [];
-            player.x = canvas.width / 2;
-            
-            scoreDisplay.textContent = '0';
-            timeDisplay.textContent = '30.0';
-
-            startOverlay.classList.add('hidden');
-            gameOverOverlay.classList.add('hidden');
-
-            isPlaying = true;
-            lastTime = 0;
-
-            generateMathQuestion();
-            requestAnimationFrame(gameLoop);
-        }
-
-        function saveAndGetRanking(newScore) {
-            let rankings = getRankings();
-            
-            const now = new Date();
-            const dateStr = `${now.getMonth() + 1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-            let newRankIndex = -1;
-
-            if (newScore > 0) {
-                const newEntry = { score: newScore, date: dateStr, isNew: true };
-                
-                // Reset previous "isNew" flags
-                rankings.forEach(r => delete r.isNew);
-                
-                rankings.push(newEntry);
-                rankings.sort((a, b) => b.score - a.score);
-                
-                // Keep Top 10
-                rankings = rankings.slice(0, 10);
-                
-                // Find index of current play
-                newRankIndex = rankings.findIndex(r => r === newEntry);
-
-                try {
-                    localStorage.setItem(RANKING_STORAGE_KEY, JSON.stringify(rankings));
-                } catch(e){}
-            }
-
-            return { rankings, newRankIndex };
-        }
-
-        function renderRankingUI(rankings, currentRankIndex) {
-            rankingList.innerHTML = '';
-
-            if (rankings.length === 0) {
-                rankingList.innerHTML = `<div class="text-xs text-slate-400 text-center py-4">まだ記録がありません</div>`;
-                return;
-            }
-
-            rankings.forEach((entry, idx) => {
-                const row = document.createElement('div');
-                const isCurrent = idx === currentRankIndex;
-
-                let medal = `<span class="w-5 text-center font-bold text-slate-500">${idx + 1}</span>`;
-                if (idx === 0) medal = `<span class="w-5 text-center text-sm">🥇</span>`;
-                else if (idx === 1) medal = `<span class="w-5 text-center text-sm">🥈</span>`;
-                else if (idx === 2) medal = `<span class="w-5 text-center text-sm">🥉</span>`;
-
-                row.className = `flex justify-between items-center text-xs py-1.5 px-2 rounded-xl transition-all ${
-                    isCurrent 
-                        ? 'bg-amber-100 border-2 border-amber-400 font-extrabold text-amber-950 scale-[1.02] shadow-sm' 
-                        : 'bg-slate-50/80 text-slate-700 border border-slate-100'
-                }`;
-
-                row.innerHTML = `
-                    <div class="flex items-center gap-1.5">
-                        ${medal}
-                        <span class="font-mono text-slate-400 text-[10px]">${entry.date || ''}</span>
-                    </div>
-                    <div class="font-mono font-black ${isCurrent ? 'text-amber-900 text-sm' : 'text-slate-800'}">
-                        ${entry.score} pt
-                        ${isCurrent ? '<span class="text-[9px] bg-amber-500 text-white px-1.5 py-0.2 rounded-full ml-1">YOU</span>' : ''}
-                    </div>
-                `;
-
-                rankingList.appendChild(row);
-            });
-        }
-
-        function endGame() {
-            isPlaying = false;
-
-            const newRecordBadge = document.getElementById('newRecordBadge');
-            
-            // Process Ranking
-            const { rankings, newRankIndex } = saveAndGetRanking(score);
-            renderRankingUI(rankings, newRankIndex);
-            updateTopScoreHeader();
-
-            if (newRankIndex !== -1) {
-                newRecordBadge.textContent = `🎉 TOP 10 ランクイン！ (#${newRankIndex + 1}) 🎉`;
-                newRecordBadge.classList.remove('hidden');
-                sound.playFanfare();
-            } else {
-                newRecordBadge.classList.add('hidden');
-            }
-
-            finalScore.textContent = score;
-            accuracyDisplay.textContent = `${correctQuestions}/${totalQuestions}`;
-            clockCountDisplay.textContent = `${clocksCollected}個`;
-
-            gameOverOverlay.classList.remove('hidden');
-        }
-
-        startBtn.addEventListener('click', startGame);
-        restartBtn.addEventListener('click', startGame);
-
-    </script>
+    // 初開時にランキング読み込み
+    loadRankingList();
+  </script>
 </body>
 </html>
