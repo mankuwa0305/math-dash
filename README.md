@@ -20,6 +20,7 @@
     }
   </style>
 </head>
+
 <body class="bg-slate-900 text-white min-h-screen flex flex-col items-center justify-between p-2 overflow-hidden select-none">
 
   <!-- ヘッダー -->
@@ -39,7 +40,7 @@
       <h2 class="text-lg font-bold mb-2 text-cyan-300">中1向け脳トレ・スピード計算</h2>
       <p class="text-xs text-slate-300 mb-4 leading-relaxed">
         中央の計算を<span class="text-yellow-300 font-bold">5秒以内</span>に解きつつ、<br>
-        下部で<span class="text-emerald-400 font-bold">時計⏱️</span>を拾って時間延長！<br>
+        最下段で<span class="text-emerald-400 font-bold">時計⏱️</span>を拾って時間延長！<br>
         <span class="text-rose-400 font-bold">爆弾💣</span>は避けよう！
       </p>
       
@@ -92,8 +93,8 @@
         </div>
       </div>
 
-      <!-- アクションキャンバスエリア（縦長＋最下段バー固定） -->
-      <div class="w-full flex-1 relative bg-slate-950 rounded-xl overflow-hidden border border-slate-800 min-h-[280px] max-h-[400px] my-1">
+      <!-- アクションキャンバスエリア（広くなった領域の最下段にバーを配置） -->
+      <div id="canvas-container" class="w-full flex-1 relative bg-slate-950 rounded-xl overflow-hidden border border-slate-800 min-h-[250px] my-1">
         <canvas id="action-canvas" class="w-full h-full block touch-none"></canvas>
       </div>
 
@@ -305,19 +306,24 @@
 
     // --- キャッチアクション（Canvas制御） ---
     const canvas = document.getElementById('action-canvas');
+    const container = document.getElementById('canvas-container');
     const ctx = canvas.getContext('2d');
 
-    let player = { x: 0, y: 0, width: 50, height: 14 };
+    let player = { x: 0, y: 0, width: 60, height: 12 };
     let items = [];
     let itemSpawnTimer = 0;
 
     function resizeCanvas() {
-      canvas.width = canvas.clientWidth;
-      canvas.height = canvas.clientHeight;
+      // 親要素の実際（CSS）の幅と高さを取得してCanvas解像度を完全に合わせる
+      const rect = container.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
       
-      // ★バーのY座標を常にキャンバス最下段（底面から18px上）に確定固定
-      player.y = canvas.height - 18;
-      if (player.x === 0) player.x = canvas.width / 2 - player.width / 2;
+      // ★バーの位置をCanvasの領域の「一番底から12px上（厚みの分）」に設定
+      player.y = canvas.height - player.height - 4;
+      if (player.x === 0 || player.x > canvas.width) {
+        player.x = (canvas.width - player.width) / 2;
+      }
     }
     window.addEventListener('resize', resizeCanvas);
 
@@ -336,18 +342,18 @@
 
     function updateAction(dt) {
       itemSpawnTimer += dt;
-      if (itemSpawnTimer > 0.7) {
+      if (itemSpawnTimer > 0.65) {
         itemSpawnTimer = 0;
         const rand = Math.random();
         let type = 'bomb';
-        if (rand < 0.225) type = 'clock';
-        else if (rand < 0.30) type = 'star';
+        if (rand < 0.25) type = 'clock';
+        else if (rand < 0.35) type = 'star';
 
         items.push({
           x: Math.random() * (canvas.width - 24),
-          y: -24,
+          y: -20,
           type: type,
-          speed: 130 + Math.random() * 70
+          speed: 120 + Math.random() * 80
         });
       }
 
@@ -355,11 +361,12 @@
         const it = items[i];
         it.y += it.speed * dt;
 
-        // キャッチ判定（最下段のバーとの当たり判定）
+        // ★最下段バーとの当たり判定（文字描画の位置に合わせた判定）
+        const itemBottom = it.y + 16;
         if (
-          it.y + 20 >= player.y &&
+          itemBottom >= player.y &&
           it.y <= player.y + player.height &&
-          it.x + 20 >= player.x &&
+          it.x + 22 >= player.x &&
           it.x <= player.x + player.width
         ) {
           if (it.type === 'clock') {
@@ -377,7 +384,8 @@
           continue;
         }
 
-        if (it.y > canvas.height) {
+        // 画面の下端を通り過ぎたら消去
+        if (it.y > canvas.height + 10) {
           items.splice(i, 1);
         }
       }
@@ -386,14 +394,14 @@
     function drawAction() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // ★常に最下段に配置されたバーを描画
+      // ★最下段バーの描画
       ctx.fillStyle = '#38bdf8';
       ctx.beginPath();
       ctx.roundRect(player.x, player.y, player.width, player.height, 6);
       ctx.fill();
 
-      // アイテム描画
-      ctx.font = '20px sans-serif';
+      // アイテムの描画
+      ctx.font = '22px sans-serif';
       items.forEach(it => {
         let icon = '💣';
         if (it.type === 'clock') icon = '⏱️';
@@ -448,12 +456,13 @@
 
       scoreDisplay.textContent = '0';
       
-      // ゲーム開始時にキャンバス描画サイズとバーの位置（最下段）を再計算
-      setTimeout(resizeCanvas, 50);
-      generateQuestion();
-
-      lastTime = performance.now();
-      requestAnimationFrame(gameLoop);
+      // ゲーム表示切り替え直後に正確なサイズ調整と最下段への配置を行う
+      requestAnimationFrame(() => {
+        resizeCanvas();
+        generateQuestion();
+        lastTime = performance.now();
+        requestAnimationFrame(gameLoop);
+      });
     }
 
     function endGame() {
