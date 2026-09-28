@@ -11,7 +11,6 @@
       user-select: none;
       -webkit-user-select: none;
     }
-    /* アニメーション */
     @keyframes pulse-fast {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.3; }
@@ -23,7 +22,7 @@
 </head>
 <body class="bg-slate-900 text-white min-h-screen flex flex-col items-center justify-between p-2 overflow-hidden select-none">
 
-  <!-- ヘッダー（タイトルエリア：ゲーム開始後は非表示にして画面を広く使う） -->
+  <!-- ヘッダー -->
   <header id="header-area" class="w-full max-w-md text-center py-1 transition-all duration-300">
     <h1 class="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-yellow-400">
       ⚡ Math & Dash ⚡
@@ -62,7 +61,7 @@
     <!-- 2. ゲームプレイ画面 -->
     <div id="game-screen" class="w-full flex-1 flex flex-col justify-between items-center hidden relative">
       
-      <!-- ステータスバー（スコア・全体タイマー・ポーズボタン） -->
+      <!-- ステータスバー -->
       <div class="w-full flex justify-between items-center bg-slate-800/90 px-3 py-1.5 rounded-xl border border-slate-700">
         <div>
           <span class="text-[10px] text-slate-400">SCORE</span>
@@ -74,32 +73,27 @@
           <div id="timer-display" class="text-xl font-black text-cyan-300 leading-none">30.0s</div>
         </div>
 
-        <!-- 一時停止ボタン（小さく設置） -->
         <button id="pause-btn" class="p-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs font-bold border border-slate-600 active:scale-95">
           ⏸️
         </button>
       </div>
 
       <!-- 計算問題エリア -->
-      <div class="w-full bg-slate-800 rounded-xl p-3 border-2 border-cyan-500/50 shadow-lg my-1 flex flex-col items-center">
-        <!-- 5秒問題タイマーバー -->
-        <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden mb-2 border border-slate-700">
+      <div class="w-full bg-slate-800 rounded-xl p-2.5 border-2 border-cyan-500/50 shadow-lg my-1 flex flex-col items-center">
+        <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden mb-1.5 border border-slate-700">
           <div id="q-timer-bar" class="bg-yellow-400 h-full w-full transition-all duration-75"></div>
         </div>
 
-        <!-- 式表示 -->
-        <div id="question-text" class="text-2xl font-black text-white tracking-widest my-1 min-h-[36px] flex items-center justify-center">
+        <div id="question-text" class="text-xl font-black text-white tracking-widest my-0.5 min-h-[30px] flex items-center justify-center">
           -
         </div>
 
-        <!-- 選択肢ボタン (4つ) -->
-        <div id="options-container" class="grid grid-cols-2 gap-2 w-full mt-1">
-          <!-- JSで動的生成 -->
+        <div id="options-container" class="grid grid-cols-2 gap-1.5 w-full mt-1">
         </div>
       </div>
 
-      <!-- アクションキャンバスエリア（下部） -->
-      <div class="w-full flex-1 relative bg-slate-950 rounded-xl overflow-hidden border border-slate-800 min-h-[160px] max-h-[220px]">
+      <!-- アクションキャンバスエリア（縦長＋最下段バー固定） -->
+      <div class="w-full flex-1 relative bg-slate-950 rounded-xl overflow-hidden border border-slate-800 min-h-[280px] max-h-[400px] my-1">
         <canvas id="action-canvas" class="w-full h-full block touch-none"></canvas>
       </div>
 
@@ -120,7 +114,7 @@
       </div>
     </div>
 
-    <!-- 4. リザルト（結果）画面 -->
+    <!-- 4. リザルト画面 -->
     <div id="result-screen" class="w-full flex-1 flex flex-col justify-center items-center text-center p-4 bg-slate-800/95 rounded-2xl border border-slate-700 hidden">
       <h2 class="text-2xl font-black text-rose-400 mb-1">GAME OVER</h2>
       <p id="new-record-badge" class="hidden text-xs bg-yellow-400 text-slate-900 font-extrabold px-3 py-1 rounded-full mb-2 animate-bounce">
@@ -146,7 +140,6 @@
   </main>
 
   <script>
-    // --- Web Audio API (効果音生成) ---
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     let audioCtx = null;
 
@@ -163,8 +156,8 @@
       const now = audioCtx.currentTime;
 
       if (type === 'correct') {
-        osc.frequency.setValueAtTime(523.25, now); // C5
-        osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.setValueAtTime(659.25, now + 0.08);
         gain.gain.setValueAtTime(0.2, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
         osc.start(now);
@@ -196,20 +189,18 @@
       }
     }
 
-    // --- ゲーム状態管理 ---
-    let gameState = 'START'; // START, PLAYING, PAUSED, GAMEOVER
+    let gameState = 'START';
     let score = 0;
     let mainTimer = 30.0;
     let correctCount = 0;
     let wrongCount = 0;
     let currentAnswer = 0;
-    let qTimer = 5.0; // 問題ごとの5秒タイマー
+    let qTimer = 5.0;
     const Q_TIME_LIMIT = 5.0;
 
     let lastTime = 0;
     let isProcessingAnswer = false;
 
-    // DOM要素
     const headerArea = document.getElementById('header-area');
     const startScreen = document.getElementById('start-screen');
     const gameScreen = document.getElementById('game-screen');
@@ -222,7 +213,6 @@
     const optionsContainer = document.getElementById('options-container');
     const qTimerBar = document.getElementById('q-timer-bar');
 
-    // --- 中1向け計算問題生成 ---
     function generateQuestion() {
       isProcessingAnswer = false;
       qTimer = Q_TIME_LIMIT;
@@ -261,7 +251,6 @@
       currentAnswer = ans;
       questionText.textContent = `${qStr} = ?`;
 
-      // 選択肢作成
       const options = new Set([ans]);
       while (options.size < 4) {
         const dummy = ans + (Math.floor(Math.random() * 7) - 3) * (Math.random() < 0.5 ? 1 : -1);
@@ -273,10 +262,9 @@
       
       shuffled.forEach(val => {
         const btn = document.createElement('button');
-        btn.className = "py-2.5 bg-slate-700 hover:bg-slate-600 active:bg-cyan-600 text-white font-bold text-lg rounded-xl border border-slate-600 shadow transition-all active:scale-95";
+        btn.className = "py-2 bg-slate-700 hover:bg-slate-600 active:bg-cyan-600 text-white font-bold text-base rounded-xl border border-slate-600 shadow transition-all active:scale-95";
         btn.textContent = val;
         
-        // 高速タップ対応（pointerdown）
         btn.addEventListener('pointerdown', (e) => {
           e.preventDefault();
           checkAnswer(val, btn);
@@ -319,19 +307,20 @@
     const canvas = document.getElementById('action-canvas');
     const ctx = canvas.getContext('2d');
 
-    let player = { x: 0, y: 0, width: 40, height: 12, speed: 0 };
+    let player = { x: 0, y: 0, width: 50, height: 14 };
     let items = [];
     let itemSpawnTimer = 0;
 
     function resizeCanvas() {
       canvas.width = canvas.clientWidth;
       canvas.height = canvas.clientHeight;
-      player.y = canvas.height - 20;
+      
+      // ★バーのY座標を常にキャンバス最下段（底面から18px上）に確定固定
+      player.y = canvas.height - 18;
       if (player.x === 0) player.x = canvas.width / 2 - player.width / 2;
     }
     window.addEventListener('resize', resizeCanvas);
 
-    // タッチ・マウス操作対応
     function handleMove(clientX) {
       const rect = canvas.getBoundingClientRect();
       const touchX = clientX - rect.left;
@@ -346,33 +335,31 @@
     });
 
     function updateAction(dt) {
-      // アイテム生成 (爆弾70% / 時計22.5% / スター7.5%)
       itemSpawnTimer += dt;
-      if (itemSpawnTimer > 0.8) {
+      if (itemSpawnTimer > 0.7) {
         itemSpawnTimer = 0;
         const rand = Math.random();
-        let type = 'bomb'; // 爆弾 70%
-        if (rand < 0.225) type = 'clock'; // 時計 22.5%
-        else if (rand < 0.30) type = 'star'; // スター 7.5%
+        let type = 'bomb';
+        if (rand < 0.225) type = 'clock';
+        else if (rand < 0.30) type = 'star';
 
         items.push({
-          x: Math.random() * (canvas.width - 20),
-          y: -20,
+          x: Math.random() * (canvas.width - 24),
+          y: -24,
           type: type,
-          speed: 90 + Math.random() * 50
+          speed: 130 + Math.random() * 70
         });
       }
 
-      // アイテム移動＆判定
       for (let i = items.length - 1; i >= 0; i--) {
         const it = items[i];
         it.y += it.speed * dt;
 
-        // キャッチ判定
+        // キャッチ判定（最下段のバーとの当たり判定）
         if (
-          it.y + 16 >= player.y &&
+          it.y + 20 >= player.y &&
           it.y <= player.y + player.height &&
-          it.x + 16 >= player.x &&
+          it.x + 20 >= player.x &&
           it.x <= player.x + player.width
         ) {
           if (it.type === 'clock') {
@@ -390,7 +377,6 @@
           continue;
         }
 
-        // 画面外削除
         if (it.y > canvas.height) {
           items.splice(i, 1);
         }
@@ -400,34 +386,31 @@
     function drawAction() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // プレイヤー描画
+      // ★常に最下段に配置されたバーを描画
       ctx.fillStyle = '#38bdf8';
       ctx.beginPath();
       ctx.roundRect(player.x, player.y, player.width, player.height, 6);
       ctx.fill();
 
       // アイテム描画
-      ctx.font = '16px sans-serif';
+      ctx.font = '20px sans-serif';
       items.forEach(it => {
         let icon = '💣';
         if (it.type === 'clock') icon = '⏱️';
         if (it.type === 'star') icon = '⭐';
-        ctx.fillText(icon, it.x, it.y + 14);
+        ctx.fillText(icon, it.x, it.y + 18);
       });
     }
 
-    // --- ゲームメインループ ---
     function gameLoop(timestamp) {
       if (!lastTime) lastTime = timestamp;
       const dt = (timestamp - lastTime) / 1000;
       lastTime = timestamp;
 
       if (gameState === 'PLAYING') {
-        // 全体タイマー更新
         mainTimer -= dt;
         timerDisplay.textContent = `${Math.max(0, mainTimer).toFixed(1)}s`;
 
-        // 問題個別5秒タイマー
         qTimer -= dt;
         const barPercent = Math.max(0, (qTimer / Q_TIME_LIMIT) * 100);
         qTimerBar.style.width = `${barPercent}%`;
@@ -435,11 +418,9 @@
           handleQuestionTimeout();
         }
 
-        // アクション更新
         updateAction(dt);
         drawAction();
 
-        // 終了判定
         if (mainTimer <= 0) {
           endGame();
           return;
@@ -451,7 +432,6 @@
       }
     }
 
-    // --- ゲーム開始 / 終了制御 ---
     function startGame() {
       initAudio();
       gameState = 'PLAYING';
@@ -461,14 +441,15 @@
       wrongCount = 0;
       items = [];
 
-      // UI切り替え（タイトルのヘッダーを非表示にして画面を広く確保）
       headerArea.classList.add('hidden');
       startScreen.classList.add('hidden');
       resultScreen.classList.add('hidden');
       gameScreen.classList.remove('hidden');
 
       scoreDisplay.textContent = '0';
-      resizeCanvas();
+      
+      // ゲーム開始時にキャンバス描画サイズとバーの位置（最下段）を再計算
+      setTimeout(resizeCanvas, 50);
       generateQuestion();
 
       lastTime = performance.now();
@@ -479,10 +460,8 @@
       gameState = 'GAMEOVER';
       playSound('wrong');
 
-      // ランキング保存
       const isNewRank = saveScoreToRanking(score);
 
-      // UI表示
       gameScreen.classList.add('hidden');
       headerArea.classList.remove('hidden');
       resultScreen.classList.remove('hidden');
@@ -498,7 +477,6 @@
       loadRankingList();
     }
 
-    // --- ランキング (localStorage) ---
     function getRanking() {
       try {
         return JSON.parse(localStorage.getItem('math_dash_ranking')) || [];
@@ -514,7 +492,7 @@
       
       ranking.push({ score: newScore, date: dateStr });
       ranking.sort((a, b) => b.score - a.score);
-      ranking = ranking.slice(0, 10); // TOP10
+      ranking = ranking.slice(0, 10);
 
       localStorage.setItem('math_dash_ranking', JSON.stringify(ranking));
       return ranking.some(item => item.score === newScore && item.date === dateStr);
@@ -550,11 +528,9 @@
       });
     }
 
-    // --- イベントリスナー設定 ---
     document.getElementById('start-btn').addEventListener('click', startGame);
     document.getElementById('restart-btn').addEventListener('click', startGame);
 
-    // ポーズ関連
     document.getElementById('pause-btn').addEventListener('click', () => {
       if (gameState === 'PLAYING') {
         gameState = 'PAUSED';
@@ -580,7 +556,6 @@
       loadRankingList();
     });
 
-    // 初開時にランキング読み込み
     loadRankingList();
   </script>
 </body>
